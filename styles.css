@@ -1,0 +1,19 @@
+
+body {
+  margin: 0;
+  background: linear-gradient(to top, #2b5faa, #87ceeb);
+  overflow: hidden;
+  font-family: sans-serif;
+}
+.title {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: white;
+  z-index: 10;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+canvas {
+  display: block;
+  margin: 0 auto;
+}
