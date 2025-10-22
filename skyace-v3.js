@@ -1,3 +1,4 @@
+// SkyAce v3 — Phaser 3 (Bottom Flight Version)
 const config = {
     type: Phaser.AUTO,
     width: 800,
@@ -19,15 +20,16 @@ function preload() {}
 function create() {
     // Background gradient
     const graphics = this.add.graphics();
-    graphics.fillGradientStyle(
-        { x: 0, y: 0, colorTop: 0x87CEEB, colorBottom: 0x1E90FF }
-    );
+    const skyGradient = graphics.createGradient(0, 0, 0, config.height, [
+        { offset: 0, color: 0x87CEEB },
+        { offset: 1, color: 0x1E90FF }
+    ]);
+    graphics.fillGradientStyle(skyGradient);
     graphics.fillRect(0, 0, config.width, config.height);
 
-    // Player
-    player = this.physics.add.sprite(config.width / 2, config.height - 80, null);
+    // Player jet at bottom
+    player = this.physics.add.sprite(config.width / 2, config.height - 50, null);
     player.setSize(40, 20).setCollideWorldBounds(true);
-    player.setDamping(true).setDrag(0.95).setMaxVelocity(300);
 
     // Groups
     bullets = this.physics.add.group();
@@ -38,7 +40,6 @@ function create() {
     groundTargets = this.physics.add.group();
     enemies = this.physics.add.group();
 
-    // Initial ground targets
     spawnGroundTargets(this, config.height);
 
     // Controls
@@ -57,15 +58,12 @@ function create() {
 }
 
 function update(time, delta) {
-    // Player movement
-    if (cursors.left.isDown) player.setAccelerationX(-600);
-    else if (cursors.right.isDown) player.setAccelerationX(600);
-    else player.setAccelerationX(0);
-    if (cursors.up.isDown) player.setAccelerationY(-600);
-    else if (cursors.down.isDown) player.setAccelerationY(600);
-    else player.setAccelerationY(0);
+    // Move player left/right only
+    player.setVelocityX(0);
+    if (cursors.left.isDown) player.setVelocityX(-300);
+    else if (cursors.right.isDown) player.setVelocityX(300);
 
-    // Auto-fire bullets
+    // Fire bullets (auto)
     if (cursors.space.isDown) {
         if (!player.lastBulletTime || time - player.lastBulletTime > 200) {
             const bullet = bullets.create(player.x, player.y - 20, null);
@@ -92,7 +90,7 @@ function update(time, delta) {
         bomb.setSize(8, 16).setTint(0xff0000).setVelocityY(300);
     }
 
-    // Vortex shots (Space + V)
+    // Vortex (Space + V)
     const vKey = this.input.keyboard.keys[86];
     if (cursors.space.isDown && vKey.isDown && time - lastVortexTime > 1200) {
         fireVortexShots(this);
@@ -106,45 +104,41 @@ function update(time, delta) {
         if (nearest) this.physics.moveToObject(m, nearest, 200);
     });
 
-    // Rocket lifespan
     rockets.children.iterate(r => { if (r) r.lifespan -= delta; if (r && r.lifespan <= 0) r.destroy(); });
 
-    // Scroll camera upward
+    // Scroll upward
     this.cameras.main.scrollY -= scrollSpeed;
 
     // Continuous ground targets
-    if (groundTargets.countActive(true) < 5) {
-        spawnGroundTargets(this, this.cameras.main.scrollY + config.height);
-    }
+    if (groundTargets.countActive(true) < 5) spawnGroundTargets(this, this.cameras.main.scrollY + config.height);
 
-    // Spawn multiple enemies progressively faster
+    // Increasing enemy spawns
     enemySpawnTimer += delta;
-    const spawnInterval = Math.max(200, 1000 - Math.floor(score / 50)); // faster with higher score
+    const spawnInterval = Math.max(200, 1000 - Math.floor(score / 50));
     if (enemySpawnTimer > spawnInterval) {
-        spawnEnemies(this, Phaser.Math.Between(1, 3)); // 1–3 enemies per wave
+        spawnEnemies(this, Phaser.Math.Between(2, 5));
         enemySpawnTimer = 0;
     }
 
-    // Update score
     this.scoreText.setText('Score: ' + score);
 }
 
-// Helpers
+// ---- Helpers ----
 function spawnEnemies(scene, count = 1) {
     for (let i = 0; i < count; i++) {
         const x = Phaser.Math.Between(50, config.width - 50);
         const y = scene.cameras.main.scrollY - 50;
-        const speed = Phaser.Math.Between(50, 100 + Math.floor(score / 50));
+        const speed = Phaser.Math.Between(50, 150 + Math.floor(score / 50));
         const enemy = scene.physics.add.sprite(x, y, null);
         enemy.setSize(30, 20).setTint(0xff00ff).setVelocityY(speed);
         enemies.add(enemy);
     }
 }
 
-function spawnGroundTargets(scene, yPosition) {
+function spawnGroundTargets(scene, yPos) {
     for (let i = 0; i < 5; i++) {
         const x = Phaser.Math.Between(50, config.width - 50);
-        const y = yPosition - Phaser.Math.Between(20, 40);
+        const y = yPos - Phaser.Math.Between(20, 40);
         const target = scene.physics.add.sprite(x, y, null);
         target.setSize(40, 20).setTint(0x00ff00);
         groundTargets.add(target);
